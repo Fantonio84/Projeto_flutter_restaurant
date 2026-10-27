@@ -1,3 +1,5 @@
+import '../models/user.dart';
+
 class SignUpViewmodel {
   // Nome: obrigatório, com pelo menos 3 letras
   String? validateName(String? value) {
@@ -39,4 +41,24 @@ class SignUpViewmodel {
     if (value != password) return 'As senhas não conferem';
     return null;
   }
+
+  Future<String?> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password }) async {
+
+    // monta o usuário com os dados que a View entregou
+    final user = User(
+      name : name,
+      email: email,
+      phone : phone,
+      password: password
+    );
+
+    // mock: simula o tempo de uma chamada para o backend
+    await Future.delayed(const Duration(seconds: 2));
+    return null; // null = deu certo
+  }
+
 }

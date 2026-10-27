@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:guia_restaurantes/viewmodels/sign_up_viewmodel.dart';
 
+
+
 class SignUpPage extends StatefulWidget {
   static const _ifoodRed = Color(0xFFEA1D2C);
 
@@ -23,6 +25,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool _obscurePassword = true; // a senha começa escondida
   bool _acceptedTerms = false; // os termos começam desmarcados
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -32,6 +35,59 @@ class _SignUpPageState extends State<SignUpPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit()  async{
+    // 1. Valida os campos do formulario
+    final isValid = _formKey.currentState!.validate();
+    if(!isValid)
+      return;
+
+    //2. confere os termos, que não são um campo de texto
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aceite os termos de uso para continuar'))
+      );
+
+      return;
+    }
+
+    //3. se toda validação passar .. iniciamos o carregamento
+    setState(() {
+      _isLoading = true;
+    });
+
+    //4. pede o cadastro da ViewModel e espera a resposta
+    final error = await _viewModel.register(
+        name: _nameController.text,
+        email: _emailController.text,
+        phone: _phoneController.text,
+        password:_passwordController.text
+    );
+
+    //5. se a tela foi fechada durante a espera, o metodo para aqui
+    if (!mounted)
+      return;
+
+    //6. desliga o carregamento
+    setState(() {
+      _isLoading = false;
+    });
+    
+    // 7. se veio uma mensagem, houve erro: mostra e para
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error))
+      );
+      return;
+    }
+    
+    // 8. deu certo: avisa e volta para a tela de Perfil
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Conta criada! Boas-vindas, ${_nameController.text.trim()}.'))
+    );
+    Navigator.pop(context);
+
   }
 
   Widget build(BuildContext context) {
@@ -175,8 +231,8 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget _buildSubmitButton() {
     return ElevatedButton(
       onPressed: () {
-        final isValid = _formKey.currentState!.validate();
-        print('formulário válido? $isValid');
+        _isLoading ? null : _submit();
+
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: SignUpPage._ifoodRed,
@@ -184,7 +240,14 @@ class _SignUpPageState extends State<SignUpPage> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
-      child: const Text(
+      child: _isLoading
+          ? const SizedBox(
+        height : 20,
+        width: 20,
+        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+
+      )
+          : const Text(
         'Criar conta',
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
@@ -217,4 +280,7 @@ class _SignUpPageState extends State<SignUpPage> {
       child: const Text('Já tenho uma conta'),
     );
   }
+
+
+
 }
